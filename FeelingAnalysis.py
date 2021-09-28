@@ -171,7 +171,7 @@ model.compile(loss=losses.BinaryCrossentropy(from_logits=True),
 
 # ENTRAINEMENT DU MODÈLE
 
-# nombre d'itérations  ~15 correct pas de sur ou sous apprentissage
+# nombre d'itérations  ~15 correct pas d'overfit ou d'underfit
 epochs = 15
 
 history = model.fit(
