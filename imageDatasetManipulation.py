@@ -67,8 +67,84 @@ for images, labels in train_data.take(1):
         ax = plt.subplot(3, 3, i + 1)
         plt.imshow(images[i].numpy().astype("uint8"))
         plt.title(categories_fleurs[labels[i]])
-        plt.axis("off")
- 
+        plt.show()
+        break
+
+
+for image_batch, labels_batch in train_data:
+    print(image_batch.shape)
+    print(labels_batch.shape)
+    break
+
+
+# images en rvb 0,255 , besoin dêtre mise entre 0 & 1 
+normalization_layer = tf.keras.layers.experimental.preprocessing.Rescaling(1./255)
+
+
+normalized_data = train_data.map(lambda x, y: (normalization_layer(x), y))
+image_batch, labels_batch = next(iter(normalized_data))
+first_image = image_batch[0]
+# affiche la valeur de l'image entre 0 et 1
+print(np.min(first_image), np.max(first_image))
+
+
+# OPTIMISATION AVEC .CACHE ET .PREFETCH, VOIR FEELINGANALYSIS.PY
+AUTOTUNE = tf.data.AUTOTUNE
+
+train_data = train_data.cache().prefetch(buffer_size=AUTOTUNE)
+validate_data = validate_data.cache().prefetch(buffer_size=AUTOTUNE)
+
+
+# CRÉATION DU MODÈLE
+
+# nb de catégories de fleurs
+num_classes = 5
+# note sur le mode d'activation: relu = laisse passer les valeurs au dessus de 1, ne pas utiliser en dernière couche
+#  sigmoid: proba comprise entre 0 et 1 , très utilisée pour les classification binaires
+model = tf.keras.Sequential([
+    # 1 ère couche de redimensionnement de la valeur rgb des images comme ci-dessus pour abaisser le nombres de données d'entrées pour le réseau
+    tf.keras.layers.experimental.preprocessing.Rescaling(1./255),
+    # couches successives de Convolution et de maxpooling voir la doc
+    tf.keras.layers.Conv2D(32, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    #  couches successives de Convolution et de maxpooling voir la doc
+    tf.keras.layers.Conv2D(32, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    #  couches successives de Convolution et de maxpooling voir la doc
+    tf.keras.layers.Conv2D(32, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    # couche qui applatis les pixels
+    tf.keras.layers.Flatten(),
+    # couche de 128 neurones densément connectés
+    tf.keras.layers.Dense(128, activation='relu'),
+    # couche finale qui à 5 sorties possibles, 5 catégories de fleurs
+    tf.keras.layers.Dense(num_classes)
+])
+
+# COMPILATION DU MODELE, OPTIMISATION ET FONCTION DE LOSS ET ACC
+model.compile(
+    optimizer='adam',
+    loss=tf.losses.SparseCategoricalCrossentropy(from_logits=True),
+    metrics=['accuracy']
+)
+
+
+# APPRENTISSAGE DU MODELE
+        #   durée des itérations longues en raison du nombre de couches de neurones successives
+model.fit(
+    # données d'entrée
+    train_data,
+    # données attendues
+    validation_data=validate_data,
+    # nb itérations
+    epochs=3
+)
+
+# affiche le nombre de données comprises dans l'ensemble train_data
+print(tf.data.experimental.cardinality(train_data).numpy())
+
+
+
 
 
 
